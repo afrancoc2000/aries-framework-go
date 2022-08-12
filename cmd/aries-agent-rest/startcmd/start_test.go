@@ -340,6 +340,28 @@ func TestStartCmdWithoutDBType(t *testing.T) {
 		err.Error())
 }
 
+func TestStartCmdWithoutDBConnectionWhenRequired(t *testing.T) {
+	startCmd, err := Cmd(&mockServer{})
+	require.NoError(t, err)
+
+	args := []string{
+		"--" + agentHostFlagName,
+		randomURL(),
+		"--" + agentInboundHostFlagName,
+		httpProtocol + "@" + randomURL(),
+		"--" + agentInboundHostExternalFlagName,
+		httpProtocol + "@" + randomURL(),
+		"--" + databaseTypeFlagName,
+		databaseTypeMySQLOption,
+	}
+	startCmd.SetArgs(args)
+
+	err = startCmd.Execute()
+	require.Equal(t,
+		"The db type mysql requires a connection string.",
+		err.Error())
+}
+
 func TestStartCmdWithoutWebhookURL(t *testing.T) {
 	startCmd, err := Cmd(&mockServer{})
 	require.NoError(t, err)

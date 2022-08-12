@@ -67,8 +67,13 @@ const (
 	databasePrefixEnvKey        = "ARIESD_DATABASE_PREFIX"
 	databasePrefixFlagShorthand = "u"
 	databasePrefixFlagUsage     = "An optional prefix to be used when creating and retrieving underlying databases. " +
-		"Also you can use this variable for paths or connection strings as needed. " +
 		" Alternatively, this can be set with the following environment variable: " + databasePrefixEnvKey
+
+	databaseConnectionStringFlagName      = "database-connection-string"
+	databaseConnectionStringEnvKey        = "ARIESD_DATABASE_CONNECTION_STRING"
+	databaseConnectionStringFlagShorthand = "s"
+	databaseConnectionStringFlagUsage     = "Connection string / Path to be used with some databases. " +
+		" Alternatively, this can be set with the following environment variable: " + databaseConnectionStringEnvKey
 
 	databaseTimeoutFlagName  = "database-timeout"
 	databaseTimeoutFlagUsage = "Total time in seconds to wait until the db is available before giving up." +
@@ -259,30 +264,35 @@ type AgentParameters struct {
 }
 
 type dbParam struct {
-	dbType  string
-	prefix  string
-	timeout uint64
+	dbType           string
+	prefix           string
+	connectionString string
+	timeout          uint64
 }
 
 // nolint:gochecknoglobals
-var supportedStorageProviders = map[string]func(prefix string) (storage.Provider, error){
-	databaseTypeMemOption: func(_ string) (storage.Provider, error) { // nolint:unparam
+var supportedStorageProviders = map[string]func(connectionString, prefix string) (storage.Provider, error){
+	databaseTypeMemOption: func(_, _ string) (storage.Provider, error) { // nolint:unparam
 		return mem.NewProvider(), nil
 	},
-	databaseTypeLevelDBOption: func(path string) (storage.Provider, error) { // nolint:unparam
+	databaseTypeLevelDBOption: func(path, _ string) (storage.Provider, error) { // nolint:unparam
 		return leveldb.NewProvider(path), nil
 	},
-	databaseTypeCouchDBOption: func(hostURL string) (storage.Provider, error) {
-		return couchdb.NewProvider(hostURL)
+	databaseTypeCouchDBOption: func(hostURL, prefix string) (storage.Provider, error) {
+		prefixOption := couchdb.WithDBPrefix(prefix)
+		return couchdb.NewProvider(hostURL, prefixOption)
 	},
-	databaseTypeMongoDBOption: func(connectionString string) (storage.Provider, error) {
-		return mongodb.NewProvider(connectionString)
+	databaseTypeMongoDBOption: func(connectionString, prefix string) (storage.Provider, error) {
+		prefixOption := mongodb.WithDBPrefix(prefix)
+		return mongodb.NewProvider(connectionString, prefixOption)
 	},
-	databaseTypeMySQLOption: func(path string) (storage.Provider, error) {
-		return mysql.NewProvider(path)
+	databaseTypeMySQLOption: func(path, prefix string) (storage.Provider, error) {
+		prefixOption := mysql.WithDBPrefix(prefix)
+		return mysql.NewProvider(path, prefixOption)
 	},
-	databaseTypePostgreSQLOption: func(connectionString string) (storage.Provider, error) {
-		return postgresql.NewProvider(connectionString)
+	databaseTypePostgreSQLOption: func(connectionString, prefix string) (storage.Provider, error) {
+		prefixOption := postgresql.WithDBPrefix(prefix)
+		return postgresql.NewProvider(connectionString, prefixOption)
 	},
 }
 
@@ -478,6 +488,11 @@ func getDBParam(cmd *cobra.Command) (*dbParam, error) {
 		return nil, err
 	}
 
+	dbParam.connectionString, err = getUserSetVar(cmd, databaseConnectionStringFlagName, databaseConnectionStringEnvKey, true)
+	if err != nil {
+		return nil, err
+	}
+
 	dbTimeout, err := getUserSetVar(cmd, databaseTimeoutFlagName, databaseTimeoutEnvKey, true)
 	if err != nil {
 		return nil, err
@@ -490,6 +505,19 @@ func getDBParam(cmd *cobra.Command) (*dbParam, error) {
 	t, err := strconv.Atoi(dbTimeout)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse db timeout %s: %w", dbTimeout, err)
+	}
+
+	dbTypeRequiresConnectionString := map[string]bool{
+		databaseTypeMemOption:        false,
+		databaseTypeLevelDBOption:    false,
+		databaseTypeCouchDBOption:    true,
+		databaseTypeMongoDBOption:    true,
+		databaseTypeMySQLOption:      true,
+		databaseTypePostgreSQLOption: true,
+	}
+
+	if dbTypeRequiresConnectionString[dbParam.dbType] && dbParam.connectionString == "" {
+		return nil, fmt.Errorf("The db type %s requires a connection string.", dbParam.dbType)
 	}
 
 	dbParam.timeout = uint64(t)
@@ -567,6 +595,9 @@ func createFlags(startCmd *cobra.Command) {
 
 	// db prefix
 	startCmd.Flags().StringP(databasePrefixFlagName, databasePrefixFlagShorthand, "", databasePrefixFlagUsage)
+
+	// db connection string
+	startCmd.Flags().StringP(databaseConnectionStringFlagName, databaseConnectionStringFlagShorthand, "", databaseConnectionStringFlagUsage)
 
 	// webhook url flag
 	startCmd.Flags().StringSliceP(agentWebhookFlagName, agentWebhookFlagShorthand, []string{}, agentWebhookFlagUsage)
@@ -952,7 +983,7 @@ func createStoreProviders(parameters *AgentParameters) (storage.Provider, error)
 	err := backoff.RetryNotify(
 		func() error {
 			var openErr error
-			store, openErr = provider(parameters.dbParam.prefix)
+			store, openErr = provider(parameters.dbParam.connectionString, parameters.dbParam.prefix)
 			return openErr
 		},
 		backoff.WithMaxRetries(backoff.NewConstantBackOff(time.Second), parameters.dbParam.timeout),
@@ -963,7 +994,7 @@ func createStoreProviders(parameters *AgentParameters) (storage.Provider, error)
 		},
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect to storage at %s : %w", parameters.dbParam.prefix, err)
+		return nil, fmt.Errorf("failed to connect to storage at %s : %w", parameters.dbParam.connectionString, err)
 	}
 
 	return store, nil
