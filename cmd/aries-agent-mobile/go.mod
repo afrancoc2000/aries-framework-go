@@ -18,6 +18,10 @@ require (
 )
 
 require (
+	github.com/hyperledger/ursa-wrapper-go v0.3.1 // indirect
+	github.com/kr/pretty v0.2.1 // indirect
+)
+require (
 	github.com/PaesslerAG/gval v1.1.0 // indirect
 	github.com/PaesslerAG/jsonpath v0.1.1 // indirect
 	github.com/VictoriaMetrics/fastcache v1.5.7 // indirect

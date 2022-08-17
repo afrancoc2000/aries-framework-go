@@ -24,6 +24,7 @@ import (
 	"github.com/hyperledger/aries-framework-go-ext/component/storage/mongodb"
 	"github.com/hyperledger/aries-framework-go-ext/component/storage/mysql"
 	"github.com/hyperledger/aries-framework-go-ext/component/storage/postgresql"
+	"github.com/hyperledger/aries-framework-go-ext/component/storage/sqlite"
 	"github.com/hyperledger/aries-framework-go/component/storage/leveldb"
 	"github.com/hyperledger/aries-framework-go/component/storageutil/mem"
 	"github.com/hyperledger/aries-framework-go/pkg/common/log"
@@ -60,7 +61,7 @@ const (
 	databaseTypeEnvKey        = "ARIESD_DATABASE_TYPE"
 	databaseTypeFlagShorthand = "q"
 	databaseTypeFlagUsage     = "The type of database to use for everything except key storage. " +
-		"Supported options: mem, leveldb, couchdb, mongodb, mysql, postgresql. " +
+		"Supported options: mem, leveldb, couchdb, mongodb, mysql, postgresql, sqlite. " +
 		" Alternatively, this can be set with the following environment variable: " + databaseTypeEnvKey
 
 	databasePrefixFlagName      = "database-prefix"
@@ -216,6 +217,7 @@ const (
 	databaseTypeMongoDBOption    = "mongodb"
 	databaseTypeMySQLOption      = "mysql"
 	databaseTypePostgreSQLOption = "postgresql"
+	databaseTypeSQLiteOption     = "sqlite"
 )
 
 var (
@@ -283,6 +285,9 @@ var supportedStorageProviders = map[string]func(prefix string) (storage.Provider
 	},
 	databaseTypePostgreSQLOption: func(connectionString string) (storage.Provider, error) {
 		return postgresql.NewProvider(connectionString)
+	},
+	databaseTypeSQLiteOption: func(connectionString string) (storage.Provider, error) {
+		return sqlite.NewProvider(connectionString)
 	},
 }
 

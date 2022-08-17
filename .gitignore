@@ -42,3 +42,4 @@ profile.out
 
 # mobile related files
 cmd/aries-agent-mobile/build/
+/.devcontainer
