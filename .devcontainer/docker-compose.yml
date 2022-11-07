@@ -1,0 +1,45 @@
+# This configuration used as reference
+# https://github.com/microsoft/vscode-dev-containers/tree/master/container-templates/docker-compose
+
+version: "3"
+
+networks:
+  default:
+
+    null
+services:
+  devcontainer:
+    image: devcontainer-aries-framework-go
+    privileged: true
+    build:
+      context: ./.docker
+      dockerfile: Dockerfile
+      args:
+        - GO_VERSION=1.17-buster
+    networks:
+      - default
+    volumes:
+      # This is where VS Code should expect to find your project's source code and the value of "workspaceFolder" in .devcontainer/devcontainer.json
+      - ..:/workspaces:cached
+
+      # Uncomment the next line to use Docker in Docker, isolated from the docker host
+      - /var/run/docker.sock:/var/run/docker-host.sock
+
+    # Uncomment the next line to use Docker from inside the container.
+    # You would be able to see the same docker components from the host
+    #- /var/run/docker.sock:/var/run/docker.sock
+
+    # Overrides default command so things don't shut down after the process ends.
+    command: /bin/bash -c "/usr/local/share/docker-init.sh && sleep infinity"
+    # Use "forwardPorts" in **devcontainer.json** to forward an app port locally.
+    # (Adding the "ports" property to this file will not forward from a Codespace.)
+
+    # Uncomment the next line to use a non-root user for all processes - See https://aka.ms/vscode-remote/containers/non-root for details.
+    # user: vscode
+
+    # You can include other services not opened by VS Code as well
+    # redis:
+    #   image: redis
+    #   restart: unless-stopped
+    #   networks:
+    #     - default

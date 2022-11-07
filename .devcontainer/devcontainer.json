@@ -1,0 +1,39 @@
+// For format details, see https://aka.ms/vscode-remote/devcontainer.json
+{
+	"name": "GoLang DevContainer",
+	"dockerComposeFile": "./docker-compose.yml",
+	"service": "devcontainer",
+	"workspaceFolder": "/workspaces",
+	"forwardPorts": [],
+	// Use 'settings' to set *default* container specific settings.json values on container create.
+	// You can edit these settings after create using File > Preferences > Settings > Remote.
+	"settings": {
+		"terminal.integrated.defaultProfile.linux": "bash",
+		"cSpell.language": "en,es"
+	},
+	// Uncomment the next line to run commands after the container is created.
+	"postCreateCommand": "/scripts/change-line-endings.sh",
+	//Uncomment the next line to run commands when the container starts (in all cases)
+	// "postStartCommand": "/scripts/create-hyperledger-channel.sh canalp2p",
+	//Uncomment the next line to have VS Code connect as an existing non-root user in the container.
+	// On Linux, by default, the container user's UID/GID will be updated to match your local user. See
+	// https://aka.ms/vscode-remote/containers/non-root for details on adding a non-root user if none exist.
+	// "remoteUser": "node",
+	// Add the IDs of extensions you want installed when the container is created in the array below.
+	"extensions": [
+		"golang.go",
+		"eamodio.gitlens",
+		"ms-vscode.azurecli",
+		"ms-azuretools.vscode-docker",
+		"mhutchie.git-graph",
+		"humao.rest-client",
+		"hediet.vscode-drawio",
+		"davidanson.vscode-markdownlint",
+		"bierner.markdown-mermaid",
+		"vscode-icons-team.vscode-icons",
+		"streetsidesoftware.code-spell-checker",
+		"esbenp.prettier-vscode",
+		"editorconfig.editorconfig",
+		"ms-vsliveshare.vsliveshare"
+	]
+}
